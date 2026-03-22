@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -34,8 +35,22 @@ var (
 func main() {
 	flag.Parse()
 	apiKey := os.Getenv("GEMINI_API_KEY")
+
+	configPath := ""
+	if configDir, err := os.UserConfigDir(); err == nil {
+		configPath = filepath.Join(configDir, "quickdesc", "api_key")
+		if apiKey == "" {
+			if content, err := os.ReadFile(configPath); err == nil {
+				apiKey = strings.TrimSpace(string(content))
+			}
+		}
+	}
+
 	if apiKey == "" {
-		fmt.Fprintln(os.Stderr, "Error: GEMINI_API_KEY environment variable is not set")
+		fmt.Fprintln(os.Stderr, "Error: GEMINI_API_KEY environment variable is not set.")
+		if configPath != "" {
+			fmt.Fprintf(os.Stderr, "Alternatively, you can place your raw API key in a file at:\n  %s\n", configPath)
+		}
 		os.Exit(1)
 	}
 
