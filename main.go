@@ -18,7 +18,18 @@ const (
 	apiURL      = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s"
 )
 
-var verbose = flag.Bool("v", false, "verbose output")
+const systemPrompt = `You are a professional software engineer. 
+Write a concise, conventional commit message based on the provided diff.
+Only output the commit message, no markdown formatting,
+no explanations.
+When appropriate, output a Key Features section as a bulleted list.
+
+`
+
+var (
+	verbose      = flag.Bool("v", false, "verbose output")
+	contextLines = flag.Int("U", 1, "lines of context in diff")
+)
 
 func main() {
 	flag.Parse()
@@ -64,22 +75,25 @@ func main() {
 }
 
 func getDiff() string {
-	// 1. Try Git cached (staged changes) with 1 line of context (saves tokens)
-	cmd := exec.Command("git", "diff", "--cached", "-U1")
+	unifiedArg := fmt.Sprintf("-U%d", *contextLines)
+	jjContextArg := fmt.Sprintf("%d", *contextLines)
+
+	// 1. Try Git cached (staged changes) with context flag
+	cmd := exec.Command("git", "diff", "--cached", unifiedArg)
 	out, err := cmd.CombinedOutput()
 	if err == nil && len(bytes.TrimSpace(out)) > 0 {
 		return string(out)
 	}
 
-	// 2. Try regular Git diff with 1 line of context
-	cmd = exec.Command("git", "diff", "-U1")
+	// 2. Try regular Git diff with context flag
+	cmd = exec.Command("git", "diff", unifiedArg)
 	out, err = cmd.CombinedOutput()
 	if err == nil && len(bytes.TrimSpace(out)) > 0 {
 		return string(out)
 	}
 
-	// 3. Try JJ (Jujutsu) default diff
-	cmd = exec.Command("jj", "diff")
+	// 3. Try JJ (Jujutsu) diff with context flag
+	cmd = exec.Command("jj", "diff", "--git", "--context", jjContextArg)
 	out, err = cmd.CombinedOutput()
 	if err == nil && len(bytes.TrimSpace(out)) > 0 {
 		return string(out)
@@ -97,8 +111,8 @@ type Content struct {
 }
 
 type GenerateContentRequest struct {
-	SystemInstruction *Content `json:"system_instruction,omitempty"`
-	Contents          []Content  `json:"contents"`
+	SystemInstruction *Content  `json:"system_instruction,omitempty"`
+	Contents          []Content `json:"contents"`
 }
 
 type UsageMetadata struct {
@@ -118,7 +132,7 @@ func generateCommitMessage(apiKey, diff string) (string, *UsageMetadata, error) 
 	reqBody := GenerateContentRequest{
 		SystemInstruction: &Content{
 			Parts: []Part{
-				{Text: "You are a professional software engineer. Write a concise, conventional commit message based on the provided diff. Only output the commit message, no markdown formatting, no explanations."},
+				{Text: systemPrompt},
 			},
 		},
 		Contents: []Content{
