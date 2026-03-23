@@ -28,6 +28,18 @@ Automatically extracts a diff from your current Git or JJ (Jujutsu) repository a
 quickdesc [-v] [-U context_lines]
 ```
 
+Use with git:
+
+```bash
+git commit -e -m "$(quickdesc)" -a
+```
+
+Use with JJ:
+
+```bash
+jj commit --editor -m "$(quickdesc)"
+```
+
 ### `dewclaw` (Generic CLI)
 
 A generic interface to the Gemini content generation engine.
