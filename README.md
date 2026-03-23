@@ -11,7 +11,7 @@ go install github.com/rspier/dewclaw/cmd/quickdesc@latest
 
 ## Configuration
 
-Both tools require a Gemini API key. You can provide it in two ways:
+Both tools require a Gemini API key. You can get one for free at [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 1.  **Environment Variable**: Set `GEMINI_API_KEY`.
 2.  **Config File**: Place the raw API key in `~/.config/dewclaw/api_key`.
