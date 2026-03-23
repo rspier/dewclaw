@@ -1,3 +1,3 @@
-module quickdesc
+module github.com/rspier/dewclaw
 
-go 1.21
+go 1.26
